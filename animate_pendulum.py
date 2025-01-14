@@ -13,7 +13,7 @@ magnets_prop = np.load(this_dir + "/magnets.npy")
 magnets_pos = magnets_prop[:, 0:2]
 magnets_pos[:, 1] *= -1
 magnets_mom = magnets_prop[:, 2:]
-magnets_mom[:, 1] *= -1
+# magnets_mom[:, 1] *= -1
 
 # Set up the figure and axis
 fig, ax = plt.subplots()
