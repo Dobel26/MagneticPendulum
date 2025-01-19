@@ -23,6 +23,7 @@ fig, ax = plt.subplots()
 ax.set_xlim(-2, 2)
 ax.set_ylim(-2, 2)
 ax.set_aspect('equal')
+ax.grid(True)
 
 # Initialize scene objects
 line, = ax.plot([], [], 'o-', lw=2)
