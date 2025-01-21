@@ -15,7 +15,8 @@ if len(magnets_prop) > 0:
     magnets_pos = magnets_prop[:, 0:2]
     magnets_pos[:, 1] *= -1
     magnets_mom = magnets_prop[:, 2:]
-    magnets_mom[:, 1] *= -1
+    magnets_mom[:, 1] *= -50
+    magnets_mom[:, 0] *= 50
 equil_points = np.load(this_dir + "/critical_points.npy")
 
 # Set up the figure and axis
