@@ -1,0 +1,120 @@
+import numpy as np
+import matplotlib.pyplot as plt
+from matplotlib.animation import FuncAnimation
+from matplotlib.animation import PillowWriter
+from time import time
+import os
+
+
+###  Load simulation data from file  ###
+this_dir = os.path.dirname(os.path.abspath(__file__))
+
+angles = np.load(this_dir + "/angle_list.npy")
+magnets_prop = np.load(this_dir + "/magnets.npy")
+if len(magnets_prop) > 0:
+    magnets_pos = magnets_prop[:, 0:2]
+    magnets_pos[:, 1] *= -1
+    magnets_mom = magnets_prop[:, 2:]
+    magnets_mom[:, 1] *= -1
+equil_points = np.load(this_dir + "/critical_points.npy")
+
+# Set up the figure and axis
+fig, ax = plt.subplots()
+ax.set_xlim(-2, 2)
+ax.set_ylim(-2, 2)
+ax.set_aspect('equal')
+ax.grid(True)
+
+# Initialize scene objects
+line, = ax.plot([], [], 'o-', lw=2)
+pendulum, = ax.plot([], [], 'o', lw=2)
+equil_lines = []
+magnets = []
+
+if len(magnets_prop) > 0:
+    for i in range(magnets_pos.shape[0]):
+        magnet_pos, = ax.plot([], [], 'o', lw=2)
+        magnet_mom, = ax.plot([], [], '--', lw=2, color=magnet_pos.get_color(), alpha=0.5)
+        
+        magnets.append([magnet_pos, magnet_mom])
+
+for _ in equil_points:
+    equil_lines.append(ax.plot([], [], '.', lw=2, color='black')[0])
+
+# Initialize field lines
+#field_lines = [ax.plot([], [], 'g-')[0] for _ in range(len(magnets_pos))]
+num_field_lines_per_magnet = 4  # Number of field lines per magnet
+field_lines = [[ax.plot([], [], 'g-')[0] for _ in range(num_field_lines_per_magnet)] for _ in range(len(magnets_pos))]
+
+def init():
+    line.set_data([], [])
+    pendulum.set_data([], [])
+    # equil_lines.set_data([], [])
+    if len(magnets_prop) > 0:
+        for magnet in magnets:
+            magnet[0].set_data([], [])  # position
+            magnet[1].set_data([], [])  # momentum
+
+    for equil_line in equil_lines:
+        equil_line.set_data([], [])
+
+    return line, pendulum
+
+# Update animation frame
+def update(frame):
+    # Redraw pendulum
+    x = np.sin(angles[frame])
+    y = -np.cos(angles[frame])
+    line.set_data([0, x], [0, y])
+    pendulum.set_data([x], [y])
+    
+    for equil_angle, equil_line in zip(equil_points, equil_lines):
+        x = np.sin(equil_angle)
+        y = -np.cos(equil_angle)
+        equil_line.set_data([x], [y])
+        # equil_line.set_data([0, x], [0, y])
+    
+    # Redraw magnet(s)
+    for i, magnet in enumerate(magnets):
+        pos = magnets_pos[i]
+        mom_vec = magnets_mom[i] + pos
+        magnet[0].set_data([pos[0]], [pos[1]])
+        magnet[1].set_data([pos[0], mom_vec[0]], [pos[1], mom_vec[1]])
+
+    # Calculate and plot field lines
+    # for j in range(4):
+    #     theta = np.linspace(0, 2 * np.pi, 100)
+    #     for i, field_line in enumerate(field_lines):
+    #         x, y = dipole_field_line(theta, j*0.2)  # Adjust r0 as needed
+    #         field_line.set_data(x + magnets_pos[i][0], y + magnets_pos[i][1])
+
+    theta = np.linspace(0, 2 * np.pi, 100)
+    for i, magnet_field_lines in enumerate(field_lines):
+        for j, field_line in enumerate(magnet_field_lines):
+            x, y = dipole_field_line(theta, (j + 1) * 0.08)  # Adjust r0 as needed
+            field_line.set_data(x + magnets_pos[i][0], y + magnets_pos[i][1])
+    
+    artists = [line, pendulum]
+    
+    for equil_line in equil_lines:
+        artists.append(equil_line)
+    
+    for magnet in magnets:
+        artists.extend(magnet)
+
+    for field_line in field_lines:
+        artists.extend(field_line)
+        
+    return artists
+
+# Function to calculate parametric field lines
+def dipole_field_line(theta, r0):
+    r = r0 * np.sin(theta)**2
+    x = r * np.cos(theta)
+    y = r * np.sin(theta)
+    return y, x
+
+# Show the animation
+ani = FuncAnimation(fig, update, frames=angles.shape[0], init_func=init, blit=True, interval=6)
+plt.show()
+
